@@ -25,14 +25,8 @@ pub const Cortex = struct {
     spike_list: []u16,
     spike_count: usize,
 
+    last_update_time: u64,
     allocator: std.mem.Allocator,
-
-    dopamine: f32,
-    serotonin: f32,
-    noradrenaline: f32,
-    ih_gain: f32,
-    exe_gain: f32,
-    noise_floor: f32,
 
     const Self = @This();
 
@@ -67,26 +61,10 @@ pub const Cortex = struct {
             .synapse_target = &[_]u16{},
             .spike_list = spike_list,
             .spike_count = 0,
-            .serotonin = 0.0,
-            .noradrenaline = 0.0,
-            .exe_gain = 0.0,
-            .ih_gain = 0.0,
-            .noise_floor = 0.0,
-            .dopamine = 0.0,
         };
     }
 
     pub fn update(self: *Self) void {
-        // }
-
-        self.dopamine = 1.0;
-        self.serotonin = 1.0;
-
-        self.exe_gain = 1.0 + (self.dopamine * 1.0);
-        self.ih_gain = 1.0 + (self.serotonin * 3.0);
-        self.noise_floor = self.noradrenaline * 5.0;
-
-        // std.debug.print("current buffer at frame 0 {d:.2}\n", .{self.current_buffer[0]});
         for (0..self.neuron.len) |i| {
             // std.debug.print("input for value of neuron v {d:.2}\n", .{self.neuron[i].v});
             self.neuron[i].update(self.current_buffer[i], self.noise_floor, 1.0);
@@ -98,6 +76,29 @@ pub const Cortex = struct {
                 self.spike_count += 1;
             }
         }
+
+        for (0..self.spike_count) |spike_idx| {
+            const sp_idx = self.spike_list[spike_idx];
+            const start = self.synapse_start_index[sp_idx];
+            const count = self.synapse_count[sp_idx];
+
+            for (start..(start + count)) |syn_idx| {
+                const target_id = self.synapse_target[syn_idx];
+                const raw_weight = self.synapse_weight[syn_idx];
+
+                var final_force: f32 = 0.0;
+
+                if (raw_weight < 0.0) {
+                    final_force = raw_weight * self.ih_gain;
+                } else {
+                    final_force = raw_weight * self.exe_gain;
+                }
+
+                self.current_buffer[target_id] += final_force;
+            }
+        }
+
+        self.spike_count = 0;
     }
 
     pub fn setInputs(self: *Self, index: usize, input_votage: f32) void {

@@ -1,5 +1,6 @@
 const std = @import("std");
 const cortexLib = @import("cortex.zig");
+const plasticity = @import("plasticity.zig");
 
 const Synapse = struct {
     weight: f32,
@@ -9,6 +10,7 @@ const Synapse = struct {
 
 pub const Brain = struct {
     connections: std.ArrayList(Synapse),
+    eligibility_trace: []f32,
     allocator: std.mem.Allocator,
 
     const Self = @This();
@@ -30,7 +32,7 @@ pub const Brain = struct {
         });
     }
 
-    pub fn bake(self: *Self, cortex: *cortexLib.Cortex) !void {
+    pub fn bake(self: *Self, cortex: *cortexLib.Cortex, plastic: *plasticity.Plasticity) !void {
         std.sort.block(Synapse, self.connections.items, .{}, lessThan);
 
         const total_wires = self.connections.items.len;
@@ -46,6 +48,9 @@ pub const Brain = struct {
 
         cortex.synapse_target = try self.allocator.alloc(u16, total_wires);
         cortex.synapse_weight = try self.allocator.alloc(f32, total_wires);
+
+        plastic.eligibility_traces = try self.allocator.alloc(f32, total_wires);
+        plastic.last_spike_times = try self.allocator.alloc(u64, 2048);
 
         for (self.connections.items, 0..) |conn, i| {
             cortex.synapse_weight[i] = conn.weight;
@@ -64,29 +69,6 @@ pub const Brain = struct {
             if (current_source < 2048) {
                 cortex.synapse_count[current_source] = run_count;
             }
-            for (0..cortex.spike_count) |spike_idx| {
-                const sp_idx = cortex.spike_list[spike_idx];
-
-                const start = cortex.synapse_start_index[sp_idx];
-                const count = cortex.synapse_count[sp_idx];
-
-                for (start..(start + count)) |syn_idx| {
-                    const target_id = cortex.synapse_target[syn_idx];
-                    const raw_weight = cortex.synapse_weight[syn_idx];
-
-                    var final_force: f32 = 0.0;
-
-                    if (raw_weight < 0.0) {
-                        final_force = raw_weight * cortex.ih_gain;
-                    } else {
-                        final_force = raw_weight * cortex.exe_gain;
-                    }
-
-                    cortex.current_buffer[target_id] += final_force;
-                }
-            }
-
-            cortex.spike_count = 0;
         }
     }
 
