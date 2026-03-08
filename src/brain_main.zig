@@ -1,7 +1,7 @@
 const std = @import("std");
 const raylib = @import("raylib");
 const robot = @import("robot/robot.zig");
-const args = @import("args");
+const clap = @import("clap");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -10,51 +10,57 @@ pub fn main() !void {
 
     const allocator = gpa.allocator();
 
-    var parser = try args.ArgumentParser.init(allocator, .{
-        .version = "0.0.1",
-        .name = "mod-e",
-    });
-    defer parser.deinit();
+    const params = [_]clap.Param(u8){
+        .{
+            .id = 'h',
+            .names = .{ .short = 'h', .long = "help" },
+        },
+        .{
+            .id = 'm',
+            .names = .{ .short = 'm', .long = "mode" },
+            .takes_value = .one,
+        },
+    };
 
-    try parser.addOption("mode", .{
-        .help = "just testing out an option",
-        .value_type = .string,
-        .choices = &[_][]const u8{ "term", "robot" },
-        .env_var = "MODE",
-        .required = true,
-    });
+    var iter = try std.process.ArgIterator.initWithAllocator(allocator);
 
-    var result = try parser.parseProcess();
-    defer result.deinit();
+    _ = iter.next();
 
-    const t = result.getString("mode") orelse "text";
+    var diag = clap.Diagnostic{};
 
-    if (std.mem.eql(u8, t, "term")) {
-        const term_sim = @import("term_sim.zig");
+    var parsers = clap.streaming.Clap(u8, std.process.ArgIterator){
+        .iter = &iter,
+        .params = &params,
+        .diagnostic = &diag,
+    };
 
-        try term_sim.term_sim(allocator);
-    } else {
-        std.debug.print("robot placeholder\n", .{});
+    while (parsers.next() catch |err| {
+        try diag.reportToFile(.stderr(), err);
+        return err;
+    }) |arg| {
+        switch (arg.param.id) {
+            'h' => std.debug.print("Help\n", .{}),
+            'm' => {
+                const value = arg.value orelse "text";
+
+                if (!std.mem.eql(u8, value, "text") and !std.mem.eql(u8, value, "robot")) {
+                    std.log.err("value can be either 'text' or 'robot'\n", .{});
+                } else {
+                    if (std.mem.eql(u8, value, "text")) {
+                        const term_sig = @import("term_sim.zig");
+
+                        try term_sig.term_sim(allocator);
+                    }
+
+                    if (std.mem.eql(u8, value, "robot")) {
+                        const rl = @import("robot_sig.zig");
+
+                        rl.robot_loop();
+                    }
+                }
+            },
+
+            else => unreachable,
+        }
     }
-
-    // var r = robot.Robot.init();
-    // const cf = raylib.ConfigFlags{
-    //     .window_highdpi = true,
-    // };
-    //
-    // raylib.setConfigFlags(cf);
-    //
-    // raylib.initWindow(1200, 800, "mod-e");
-    //
-    // defer raylib.closeWindow();
-    //
-    // while (!raylib.windowShouldClose()) {
-    //     raylib.beginDrawing();
-    //
-    //     defer raylib.endDrawing();
-    //
-    //     raylib.clearBackground(.black);
-    //
-    //     r.draw();
-    // }
 }

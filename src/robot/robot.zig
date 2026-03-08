@@ -11,15 +11,15 @@ pub const Robot = struct {
         var eyes: [2]raylib.Rectangle = undefined;
 
         eyes[0] = .{
-            .height = 100,
-            .width = 100,
+            .height = 80,
+            .width = 80,
             .x = 420,
             .y = 200,
         };
 
         eyes[1] = .{
-            .height = 100,
-            .width = 100,
+            .height = 80,
+            .width = 80,
             .x = 550,
             .y = 200,
         };
@@ -32,10 +32,10 @@ pub const Robot = struct {
         };
 
         const mouth = raylib.Rectangle{
-            .width = 400,
-            .height = 400,
-            .x = 300,
-            .y = 300,
+            .width = 100,
+            .height = 50,
+            .x = 480,
+            .y = 320,
         };
 
         return Self{
@@ -49,5 +49,6 @@ pub const Robot = struct {
         raylib.drawRectangleRec(self.face, .white);
         raylib.drawRectangleRec(self.eyes[0], .blue);
         raylib.drawRectangleRec(self.eyes[1], .blue);
+        raylib.drawRectangleRec(self.mouth, .blue);
     }
 };

@@ -22,7 +22,9 @@ pub fn term_sim(allocator: std.mem.Allocator) !void {
     try wire(&b, prng.random());
     try b.bake(&c, &p);
 
-    while (true) {}
+    while (true) {
+        std.log.info("simulator loop\n", .{});
+    }
 }
 
 fn wire(b: *brain.Brain, random: std.Random) !void {

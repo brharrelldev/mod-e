@@ -28,12 +28,12 @@ pub fn build(b: *std.Build) void {
         run_cmd.addArgs(args);
     }
 
-    const args = b.dependency("args", .{
+    const clap = b.dependency("clap", .{
         .target = target,
         .optimize = optimize,
     });
 
-    exe_brain_entry.root_module.addImport("args", args.module("args"));
+    exe_brain_entry.root_module.addImport("clap", clap.module("clap"));
 
     const raylib_dep = b.dependency("raylib_zig", .{
         .target = target,
