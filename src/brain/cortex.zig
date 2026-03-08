@@ -86,15 +86,7 @@ pub const Cortex = struct {
                 const target_id = self.synapse_target[syn_idx];
                 const raw_weight = self.synapse_weight[syn_idx];
 
-                var final_force: f32 = 0.0;
-
-                if (raw_weight < 0.0) {
-                    final_force = raw_weight * self.ih_gain;
-                } else {
-                    final_force = raw_weight * self.exe_gain;
-                }
-
-                self.current_buffer[target_id] += final_force;
+                self.current_buffer[target_id] = raw_weight;
             }
         }
 

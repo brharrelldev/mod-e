@@ -27,12 +27,12 @@ pub fn main() !void {
     var result = try parser.parseProcess();
     defer result.deinit();
 
-    const t = result.getString("mode") orelse "term";
+    const t = result.getString("mode") orelse "text";
 
     if (std.mem.eql(u8, t, "term")) {
         const term_sim = @import("term_sim.zig");
 
-        term_sim.term_sim();
+        term_sim.term_sim(allocator);
     } else {
         std.debug.print("robot placeholder\n", .{});
     }
