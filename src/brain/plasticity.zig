@@ -13,12 +13,12 @@ const euler: f32 = 2.71828;
 pub const Plasticity = struct {
     weights: []f32,
     eligibility_traces: []f32,
-    pre_indicies: []u32, //row (CSR)
-    post_indicies: []32, //columns (CSS)
+    pre_indicies: []u16, //row (CSR)
+    post_indicies: []u16, //columns (CSS)
     last_spike_times: []u64,
     const Self = @This();
 
-    pub fn init(allocator: std.mem.Allocator, connection_count: u32) Self {
+    pub fn init(allocator: std.mem.Allocator, connection_count: u32) !Self {
         const weights = try allocator.alloc(f32, max_neuron_count);
         const eligibility_traces = try allocator.alloc(f32, connection_count);
         const pre_indicies = try allocator.alloc(u16, max_neuron_count);

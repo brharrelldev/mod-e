@@ -10,7 +10,6 @@ const Synapse = struct {
 
 pub const Brain = struct {
     connections: std.ArrayList(Synapse),
-    eligibility_trace: []f32,
     allocator: std.mem.Allocator,
 
     const Self = @This();

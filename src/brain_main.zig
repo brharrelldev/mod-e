@@ -32,7 +32,7 @@ pub fn main() !void {
     if (std.mem.eql(u8, t, "term")) {
         const term_sim = @import("term_sim.zig");
 
-        term_sim.term_sim(allocator);
+        try term_sim.term_sim(allocator);
     } else {
         std.debug.print("robot placeholder\n", .{});
     }

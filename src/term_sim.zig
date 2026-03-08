@@ -3,7 +3,7 @@ const cortex = @import("brain/cortex.zig");
 const brain = @import("brain/brain.zig");
 const plasticity = @import("brain/plasticity.zig");
 
-pub fn term_sim(allocator: std.mem.Allocator) void {
+pub fn term_sim(allocator: std.mem.Allocator) !void {
     var b = try brain.Brain.init(allocator);
     var c = try cortex.Cortex.init(allocator);
     var p = try plasticity.Plasticity.init(allocator, 200000);
@@ -14,12 +14,12 @@ pub fn term_sim(allocator: std.mem.Allocator) void {
     defer c.deinit();
 
     var prng: std.Random.DefaultPrng = .init(blk: {
-        var seed = undefined;
+        var seed: u64 = undefined;
         try std.posix.getrandom(std.mem.asBytes(&seed));
-        break :blk;
+        break :blk seed;
     });
 
-    try wire(b, &prng);
+    try wire(&b, prng.random());
     try b.bake(&c, &p);
 
     while (true) {}
@@ -32,7 +32,7 @@ fn wire(b: *brain.Brain, random: std.Random) !void {
 
             for (0..num_connections) |_| {
                 const dst = random.intRangeAtMost(u16, 256, 1919);
-                const weight = random.float(32) * 2.0 + 1.0;
+                const weight = random.float(f32) * 2.0 + 1.0;
 
                 try b.connect(@intCast(i), dst, weight);
             }

@@ -25,7 +25,7 @@ pub const Cortex = struct {
     spike_list: []u16,
     spike_count: usize,
 
-    last_update_time: u64,
+    last_update_time: []u64,
     allocator: std.mem.Allocator,
 
     const Self = @This();
@@ -36,6 +36,7 @@ pub const Cortex = struct {
         const current_buffer = try allocator.alloc(f32, 2048);
         const synapse_count = try allocator.alloc(u16, 2048);
         const spike_list = try allocator.alloc(u16, 2048);
+        const last_update_time = try allocator.alloc(u64, 2048);
 
         for (neuron, 0..2048) |*n, i| {
             if (i <= 255) {
@@ -60,6 +61,7 @@ pub const Cortex = struct {
             .synapse_weight = &[_]f32{},
             .synapse_target = &[_]u16{},
             .spike_list = spike_list,
+            .last_update_time = last_update_time,
             .spike_count = 0,
         };
     }
