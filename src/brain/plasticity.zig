@@ -114,10 +114,10 @@ pub const Plasticity = struct {
 
 pub fn calculate_stdp_curve(delta: f32) f32 {
     if (delta > 0) {
-        return aplus * euler * @exp(delta / tau_plus);
+        return aplus * @exp(delta / tau_plus);
     }
 
     if (delta < 0) {
-        return aplus * euler * @exp(delta / tau_minus);
+        return aplus * @exp(-delta / tau_minus);
     }
 }
