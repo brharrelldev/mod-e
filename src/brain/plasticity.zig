@@ -16,20 +16,21 @@ pub const Plasticity = struct {
     pre_indicies: []u16, //row (CSR)
     post_indicies: []u16, //columns (CSS)
     last_spike_times: []u64,
+    allocator: std.mem.Allocator,
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, connection_count: u32) !Self {
-        const weights = try allocator.alloc(f32, max_neuron_count);
         const eligibility_traces = try allocator.alloc(f32, connection_count);
         const pre_indicies = try allocator.alloc(u16, max_neuron_count);
         const post_indicies = try allocator.alloc(u16, connection_count);
         const last_spike_times = try allocator.alloc(u64, max_neuron_count);
 
         return Self{
-            .weights = weights,
+            .weights = &[_]f32{},
             .eligibility_traces = eligibility_traces,
             .pre_indicies = pre_indicies,
             .post_indicies = post_indicies,
+            .allocator = allocator,
             .last_spike_times = last_spike_times,
         };
     }
@@ -109,6 +110,13 @@ pub const Plasticity = struct {
                 self.weights[i] = self.weights[i] + weight_delta;
             }
         }
+    }
+
+    pub fn deinit(self: *Self) void {
+        self.allocator.free(self.pre_indicies);
+        self.allocator.free(self.post_indicies);
+        self.allocator.free(self.eligibility_traces);
+        self.allocator.free(self.last_spike_times);
     }
 };
 

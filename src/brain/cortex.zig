@@ -110,6 +110,7 @@ pub const Cortex = struct {
         self.allocator.free(self.synapse_start_index);
         self.allocator.free(self.synapse_count);
         self.allocator.free(self.spike_list);
+        self.allocator.free(self.last_update_time);
 
         if (self.synapse_target.len > 0) self.allocator.free(self.synapse_target);
         if (self.synapse_weight.len > 0) self.allocator.free(self.synapse_weight);

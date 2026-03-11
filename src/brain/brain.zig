@@ -48,6 +48,11 @@ pub const Brain = struct {
         cortex.synapse_target = try self.allocator.alloc(u16, total_wires);
         cortex.synapse_weight = try self.allocator.alloc(f32, total_wires);
 
+        plastic.weights = cortex.synapse_weight;
+
+        if (plastic.eligibility_traces.len > 0) plastic.allocator.free(plastic.eligibility_traces);
+        if (plastic.last_spike_times.len > 0) plastic.allocator.free(plastic.last_spike_times);
+
         plastic.eligibility_traces = try self.allocator.alloc(f32, total_wires);
         plastic.last_spike_times = try self.allocator.alloc(u64, 2048);
 

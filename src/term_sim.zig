@@ -9,9 +9,10 @@ pub fn term_sim(allocator: std.mem.Allocator) !void {
     var p = try plasticity.Plasticity.init(allocator, 200000);
 
     defer b.deinit();
-    c.deinit();
 
     defer c.deinit();
+
+    defer p.deinit();
 
     var prng: std.Random.DefaultPrng = .init(blk: {
         var seed: u64 = undefined;
@@ -22,9 +23,15 @@ pub fn term_sim(allocator: std.mem.Allocator) !void {
     try wire(&b, prng.random());
     try b.bake(&c, &p);
 
-    while (true) {
-        std.log.info("simulator loop\n", .{});
+    for (0..256) |_| {
+        c.setInputs(0, 1.0);
+
+        std.log.info("adding volgage", .{});
     }
+
+    // while (true) {
+    //     std.log.info("simulator loop\n", .{});
+    // }
 }
 
 fn wire(b: *brain.Brain, random: std.Random) !void {
@@ -63,5 +70,26 @@ fn wire(b: *brain.Brain, random: std.Random) !void {
                 try b.connect(@intCast(i), dst, weight);
             }
         } else {}
+    }
+}
+
+fn brain_loop() void {
+    const tick_interval: u64 = 10 * std.time.ns_per_ms;
+
+    var timer = try std.time.Timer.start();
+
+    var tick_count: usize = 0;
+
+    while (tick_count < 100) : (tick_count += 1) {
+        timer.reset();
+
+        const elapsed = timer.read();
+
+        if (elapsed < tick_interval) {
+            const sleep_time_ns = tick_interval - elapsed;
+            std.Thread.sleep(sleep_time_ns);
+        } else {
+            std.debug.print("testing \n", .{});
+        }
     }
 }
