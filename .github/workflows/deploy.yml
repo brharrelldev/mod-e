@@ -5,13 +5,14 @@ on:
       - main
 jobs:
   deploy:
-    name: deploy
-    runs-on: ubuntu-latest
-    - uses: actions/checkout@v3
-    - uses: goto-bus-stop/setup-zig@v2
-      with:
-        version: 0.15.2
-    - name: build
-      run: zig build
+    steps:
+      name: deploy
+      runs-on: ubuntu-latest
+      - uses: actions/checkout@v3
+      - uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.15.2
+      - name: build
+        run: zig build
     
   
