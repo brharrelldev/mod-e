@@ -5,9 +5,9 @@ on:
       - main
 jobs:
   deploy:
+    name: deployruns-on
+    runs-on: ubuntu-latest
     steps:
-      name: deploy
-      runs-on: ubuntu-latest
       - uses: actions/checkout@v3
       - uses: goto-bus-stop/setup-zig@v2
         with:
