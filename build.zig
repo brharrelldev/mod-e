@@ -28,6 +28,10 @@ pub fn build(b: *std.Build) void {
         run_cmd.addArgs(args);
     }
 
+    const vaxis = b.dependency("vaxis", .{});
+
+    exe_brain_entry.root_module.addImport("vaxis", vaxis.module("vaxis"));
+
     const clap = b.dependency("clap", .{
         .target = target,
         .optimize = optimize,

@@ -67,9 +67,15 @@ pub const Cortex = struct {
     }
 
     pub fn update(self: *Self) void {
+        var prng = std.Random.DefaultPrng.init(42);
+
+        var r = prng.random();
         for (0..self.neuron.len) |i| {
             // std.debug.print("input for value of neuron v {d:.2}\n", .{self.neuron[i].v});
-            self.neuron[i].update(self.current_buffer[i], self.noise_floor, 1.0);
+            const raw = r.float(f32);
+
+            const noise_floor = self.current_buffer[i] * raw * 5.0;
+            self.neuron[i].update(self.current_buffer[i], noise_floor, 1.0);
 
             self.current_buffer[i] = 0.0;
 

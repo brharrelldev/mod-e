@@ -47,9 +47,9 @@ pub fn main() !void {
                     std.log.err("value can be either 'text' or 'robot'\n", .{});
                 } else {
                     if (std.mem.eql(u8, value, "text")) {
-                        const term_sig = @import("term_sim.zig");
+                        const term_sig = @import("term_sig.zig");
 
-                        try term_sig.term_sim(allocator);
+                        try term_sig.term_sig(allocator);
                     }
 
                     if (std.mem.eql(u8, value, "robot")) {
