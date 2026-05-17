@@ -3,64 +3,52 @@ const raylib = @import("raylib");
 const robot = @import("robot/robot.zig");
 const clap = @import("clap");
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+const Mode = enum {
+    Term,
+    Robot,
+};
 
-    defer _ = gpa.deinit();
+pub fn main(init: std.process.Init) !void {
+    const params = comptime clap.parseParamsComptime(
+        \\-h, --help
+        \\-m, --mode <ANSWER> put in Term or Robot
+    );
 
-    const allocator = gpa.allocator();
-
-    const params = [_]clap.Param(u8){
-        .{
-            .id = 'h',
-            .names = .{ .short = 'h', .long = "help" },
-        },
-        .{
-            .id = 'm',
-            .names = .{ .short = 'm', .long = "mode" },
-            .takes_value = .one,
-        },
+    const parsers = comptime .{
+        .ANSWER = clap.parsers.enumeration(Mode),
     };
-
-    var iter = try std.process.ArgIterator.initWithAllocator(allocator);
-
-    _ = iter.next();
 
     var diag = clap.Diagnostic{};
 
-    var parsers = clap.streaming.Clap(u8, std.process.ArgIterator){
-        .iter = &iter,
-        .params = &params,
+    var res = clap.parse(clap.Help, &params, parsers, init.minimal.args, .{
         .diagnostic = &diag,
+        .allocator = init.gpa,
+        .assignment_separators = "=",
+    }) catch |err| {
+        try diag.reportToFile(init.io, .stderr(), err);
+        return err;
     };
 
-    while (parsers.next() catch |err| {
-        try diag.reportToFile(.stderr(), err);
-        return err;
-    }) |arg| {
-        switch (arg.param.id) {
-            'h' => std.debug.print("Help\n", .{}),
-            'm' => {
-                const value = arg.value orelse "text";
+    defer res.deinit();
 
-                if (!std.mem.eql(u8, value, "text") and !std.mem.eql(u8, value, "robot")) {
-                    std.log.err("value can be either 'text' or 'robot'\n", .{});
-                } else {
-                    if (std.mem.eql(u8, value, "text")) {
-                        const term_sig = @import("term_sig.zig");
+    if (res.args.help != 0)
+        std.debug.print("--help", .{});
+    if (res.args.mode) |m| {
+        switch (m) {
+            .Term => {
+                const term = @import("term_sig.zig");
 
-                        try term_sig.term_sig(allocator);
-                    }
-
-                    if (std.mem.eql(u8, value, "robot")) {
-                        const rl = @import("robot_sig.zig");
-
-                        rl.robot_loop();
-                    }
-                }
+                try term.term_sig(init.io, init.environ_map, init.gpa);
             },
-
-            else => unreachable,
+            .Robot => {
+                std.debug.print("Robot selected\n", .{});
+            },
+            // else => {
+            //     std.debug.print("must be 'Term' or 'Robot'\n", .{});
+            // },
         }
+        //     if (!std.mem.eql(u8, @tagName(m), "Term") and !std.mem.eql(u8, @tagName(m), "Robot")) {
+        //         std.debug.print("value can only be 'Term' or 'Robot'\n", .{});
+        //     }
     }
 }

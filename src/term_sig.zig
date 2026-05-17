@@ -58,7 +58,7 @@ const Event = union(enum) {
     winsize: vaxis.Winsize,
 };
 
-pub fn term_sig(allocator: std.mem.Allocator) !void {
+pub fn term_sig(io: std.Io, env_map: *std.process.Environ.Map, allocator: std.mem.Allocator) !void {
     var b = try brain_mod.Brain.init(allocator);
     var c = try cortex_mod.Cortex.init(allocator);
     var p = try plasticity_mod.Plasticity.init(allocator, 200_000);
@@ -66,9 +66,17 @@ pub fn term_sig(allocator: std.mem.Allocator) !void {
     defer c.deinit();
     defer p.deinit();
 
+    // var prng: std.Random.DefaultPrng = .init(blk: {
+    //     var seed: u64 = undefined;
+    //     try std.posix.getrandom(std.mem.asBytes(&seed));
+    //     break :blk seed;
+    // });
+    //
+    //
+
     var prng: std.Random.DefaultPrng = .init(blk: {
         var seed: u64 = undefined;
-        try std.posix.getrandom(std.mem.asBytes(&seed));
+        io.random(std.mem.asBytes(&seed));
         break :blk seed;
     });
 
@@ -76,19 +84,23 @@ pub fn term_sig(allocator: std.mem.Allocator) !void {
     try b.bake(&c, &p);
 
     var tty_buf: [4096]u8 = undefined;
-    var tty = try vaxis.Tty.init(&tty_buf);
+    var tty = try vaxis.Tty.init(io, &tty_buf);
     defer tty.deinit();
 
-    var vx = try vaxis.init(allocator, .{});
+    var vx = try vaxis.init(io, allocator, env_map, .{});
     defer vx.deinit(allocator, tty.writer());
 
-    var loop: vaxis.Loop(Event) = .{ .tty = &tty, .vaxis = &vx };
-    try loop.init();
+    // var loop: vaxis.Loop(Event) = .{
+    //     .tty = &tty,
+    //     .vaxis = &vx,
+    // };
+    //
+    var loop: vaxis.Loop(Event) = .init(io, &tty, &vx);
     try loop.start();
     defer loop.stop();
 
     try vx.enterAltScreen(tty.writer());
-    try vx.queryTerminal(tty.writer(), 1 * std.time.ns_per_s);
+    try vx.queryTerminal(tty.writer(), .fromNanoseconds(1));
 
     var frame_arena = std.heap.ArenaAllocator.init(allocator);
     defer frame_arena.deinit();
@@ -104,12 +116,12 @@ pub fn term_sig(allocator: std.mem.Allocator) !void {
     const tick_ns: u64 = 20 * std.time.ns_per_ms; // 50 Hz target
 
     while (true) {
-        const t0: i128 = std.time.nanoTimestamp();
+        const t0: i128 = std.time.ns_per_ms;
 
         _ = frame_arena.reset(.retain_capacity);
         const fa = frame_arena.allocator();
 
-        while (loop.tryEvent()) |ev| {
+        while (try loop.tryEvent()) |ev| {
             switch (ev) {
                 .key_press => |key| {
                     if (key.matches('q', .{}) or
@@ -122,7 +134,7 @@ pub fn term_sig(allocator: std.mem.Allocator) !void {
             }
         }
 
-        for (0..8) |i| c.setInputs(i, prng.random().float(f32));
+        for (0..200) |i| c.setInputs(i, prng.random().float(f32));
 
         c.update();
 
@@ -153,8 +165,8 @@ pub fn term_sig(allocator: std.mem.Allocator) !void {
 
         tick += 1;
 
-        const elapsed: u64 = @intCast(@max(std.time.nanoTimestamp() - t0, 0));
-        if (elapsed < tick_ns) std.Thread.sleep(tick_ns - elapsed);
+        const elapsed: u64 = @intCast(@max(std.time.ns_per_ms - t0, 0));
+        if (elapsed < tick_ns) try io.sleep(.fromNanoseconds(tick_ns - elapsed), .cpu_thread);
     }
 }
 
@@ -527,6 +539,8 @@ fn voltageToColor(v: f32, fired: bool) vaxis.Color {
 }
 
 fn wire(b: *brain_mod.Brain, random: std.Random) !void {
+    // var outbound_connects: usize = 0;
+
     for (0..2048) |i| {
         if (i <= 255) {
             for (0..20) |_| {

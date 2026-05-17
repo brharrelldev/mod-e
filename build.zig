@@ -28,7 +28,10 @@ pub fn build(b: *std.Build) void {
         run_cmd.addArgs(args);
     }
 
-    const vaxis = b.dependency("vaxis", .{});
+    const vaxis = b.dependency("vaxis", .{
+        .target = target,
+        .optimize = optimize,
+    });
 
     exe_brain_entry.root_module.addImport("vaxis", vaxis.module("vaxis"));
 
@@ -48,7 +51,7 @@ pub fn build(b: *std.Build) void {
     const raylib_gui = raylib_dep.module("raygui");
     const raylib_artififact = raylib_dep.artifact("raylib");
 
-    exe_brain_entry.linkLibrary(raylib_artififact);
+    exe_brain_entry.root_module.linkLibrary(raylib_artififact);
 
     exe_brain_entry.root_module.addImport("raylib", raylib);
     exe_brain_entry.root_module.addImport("raygui", raylib_gui);

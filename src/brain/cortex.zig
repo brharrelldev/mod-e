@@ -94,7 +94,7 @@ pub const Cortex = struct {
                 const target_id = self.synapse_target[syn_idx];
                 const raw_weight = self.synapse_weight[syn_idx];
 
-                self.current_buffer[target_id] = raw_weight;
+                self.current_buffer[target_id] += raw_weight;
             }
         }
 
